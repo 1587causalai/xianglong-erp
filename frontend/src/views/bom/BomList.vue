@@ -47,18 +47,17 @@ export default {
       ];
     },
     handleAddBom() {
-      this.$router.push({ name: 'BomForm', params: { id: 'new' } }); // Assuming you have a route named BomForm
+      this.$router.push({ name: 'CreateBOM' }); // Use CreateBOM route name
     },
     handleView(row) {
-      // TODO: Navigate to BOM detail view or open dialog
       console.log('View BOM:', row);
-      this.$router.push({ name: 'BomForm', params: { id: row.bom_id }, query: { view: 'true' } });
+      this.$router.push({ name: 'EditBOM', params: { id: row.bom_id }, query: { view: 'true' } }); // Use EditBOM for view, with query param
     },
     handleEdit(row) {
-      this.$router.push({ name: 'BomForm', params: { id: row.bom_id } });
+      console.log('Edit BOM in BomList:', row); // Add log for debugging
+      this.$router.push({ name: 'EditBOM', params: { id: row.bom_id } }); // Use EditBOM route name
     },
     handleDelete(row) {
-      // TODO: Confirm and call API to delete BOM
       console.log('Delete BOM:', row);
         this.$confirm('此操作将永久删除该BOM, 是否继续?', '提示', {
         confirmButtonText: '确定',

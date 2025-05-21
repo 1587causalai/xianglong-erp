@@ -80,26 +80,34 @@ export default {
   created() {
     const bomId = this.$route.params.id;
     this.isViewMode = this.$route.query.view === 'true';
-    if (bomId && bomId !== 'new') {
-      this.isEditMode = true;
-      this.fetchBomDetails(bomId);
-    } else {
+
+    if (this.$route.name === 'CreateBOM') {
       this.isEditMode = false;
-      // Add a default empty item for new BOM
-      if (!this.isViewMode) this.addDetailItem(); 
+      // For new BOM, viewMode doesn't make sense, ensure it's editable.
+      this.isViewMode = false; 
+      this.addDetailItem(); 
+    } else if (this.$route.name === 'EditBOM' && bomId) {
+      this.isEditMode = true; // isViewMode is already set from query param
+      this.fetchBomDetails(bomId);
+      console.log(`BomForm loaded for ${this.isViewMode ? 'viewing' : 'editing'} BOM ID:`, bomId);
+    } else {
+      console.error("BomForm loaded with unexpected route state:", this.$route.name, this.$route.params);
+      // Potentially redirect or show an error message to the user
+      this.$message.error('无法加载BOM表单，路由状态不正确。');
+      this.goBack(); // Go back to list if state is invalid
     }
   },
   methods: {
     fetchBomDetails(bomId) {
-      // TODO: Call API to get BOM details by bomId
       console.log('Fetch BOM details for:', bomId);
-      // Example data structure:
+      // TODO: Replace with actual API call
+      // Simulating API call with example data based on isEditMode/isViewMode
       this.bomForm = {
         bom_id: bomId,
-        product_id: '1', // Example product ID
+        product_id: '1', 
         bom_version: 'V1.0',
         bom_status: 1,
-        bom_remark: '这是一个示例BOM',
+        bom_remark: this.isViewMode ? '查看模式BOM备注' : '编辑模式BOM备注',
         details: [
           { bom_detail_id: 1, component_id: '1', quantity: 2, bom_detail_remark: '主要部件' },
           { bom_detail_id: 2, component_id: '2', quantity: 5, bom_detail_remark: '辅助材料' },
@@ -107,21 +115,23 @@ export default {
       };
     },
     addDetailItem() {
+      if (this.isViewMode) return; // Don't add items in view mode
       this.bomForm.details.push({
         component_id: null,
         quantity: 1,
         bom_detail_remark: ''
-        // temp_id for local key if needed before saving: Date.now()
       });
     },
     removeDetailItem(index) {
+      if (this.isViewMode) return; // Don't remove items in view mode
       this.bomForm.details.splice(index, 1);
     },
     submitForm() {
+      if (this.isViewMode) return; // Don't submit in view mode
       this.$refs.bomFormRef.validate(valid => {
         if (valid) {
-          // TODO: Call API to save/update BOM
           console.log('Submitting BOM:', this.bomForm);
+          // TODO: Call API to save/update BOM (differentiate create vs update by bomForm.bom_id or isEditMode)
           this.$message.success('BOM保存成功!');
           this.goBack();
         } else {
@@ -131,7 +141,7 @@ export default {
       });
     },
     goBack() {
-      this.$router.push({ name: 'BomList' }); // Assuming your list route is named BomList
+      this.$router.push({ name: 'BOM' }); // Route name for BomList is 'BOM'
     }
   }
 };
