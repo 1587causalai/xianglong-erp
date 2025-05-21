@@ -69,16 +69,27 @@ export default {
       this.$refs.loginForm.validate(async valid => {
         if (valid) {
           try {
-            await this.login(this.loginForm)
-            this.$router.push('/')
-            this.$message.success('登录成功')
+            const loginResponse = await this.login(this.loginForm);
+            console.log('Login action response in component:', loginResponse);
+            console.log('Token in Vuex after login action:', this.$store.state.token);
+            console.log('User in Vuex after login action:', this.$store.state.user);
+
+            if (this.$store.state.token) {
+              this.$router.push('/');
+              this.$message.success('登录成功');
+            } else {
+              this.$message.error('登录似乎成功，但未能获取到Token，请检查控制台。');
+              console.error('Token is still missing in Vuex state after login action.');
+            }
           } catch (error) {
-            console.error('登录失败:', error)
+            console.error('登录流程失败:', error);
+            const errorMessage = error.response?.data?.message || error.message || '未知登录错误';
+            this.$message.error('登录失败: ' + errorMessage);
           }
         } else {
-          return false
+          return false;
         }
-      })
+      });
     }
   }
 }

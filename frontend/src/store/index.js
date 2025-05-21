@@ -35,8 +35,13 @@ export default new Vuex.Store({
       commit('SET_LOADING', true)
       try {
         const response = await axios.post('/auth/login', credentials)
-        const { token, user } = response.data.data
+        const { token, user } = response.data
         
+        if (!token || !user) {
+            console.error('Failed to destructure token or user from response.data', response.data);
+            throw new Error('从后端响应中未能正确获取token或用户信息');
+        }
+
         localStorage.setItem('token', token)
         localStorage.setItem('user', JSON.stringify(user))
         
@@ -44,8 +49,6 @@ export default new Vuex.Store({
         commit('SET_USER', user)
         
         return response
-      } catch (error) {
-        throw error
       } finally {
         commit('SET_LOADING', false)
       }
@@ -63,14 +66,17 @@ export default new Vuex.Store({
       commit('SET_LOADING', true)
       try {
         const response = await axios.get('/auth/me')
-        const user = response.data.data
+        const user = response.data.user
         
+        if (!user || Object.keys(user).length === 0) {
+            console.error('Failed to get user info from response.data.user', response.data);
+            throw new Error('未能从后端响应中获取有效的用户信息');
+        }
+
         localStorage.setItem('user', JSON.stringify(user))
         commit('SET_USER', user)
         
         return user
-      } catch (error) {
-        throw error
       } finally {
         commit('SET_LOADING', false)
       }

@@ -608,6 +608,8 @@ BEGIN
     DECLARE v_transaction_no VARCHAR(50);
     DECLARE v_done INT DEFAULT FALSE;
     DECLARE v_error_message TEXT;
+    DECLARE v_component_name VARCHAR(100);
+    DECLARE v_product_name VARCHAR(100);
     
     -- 声明游标，获取BOM中的配件清单
     DECLARE cur_components CURSOR FOR 
@@ -642,6 +644,9 @@ BEGIN
     -- 生成领料事务编号
     SET v_transaction_no = CONCAT('MT', DATE_FORMAT(NOW(), '%Y%m%d'), LPAD(FLOOR(RAND() * 10000), 4, '0'));
     
+    -- 获取产品名称
+    SELECT product_name INTO v_product_name FROM products WHERE product_id = p_product_id;
+
     -- 创建领料事务记录
     INSERT INTO inventory_transactions (
         transaction_no, 
@@ -661,7 +666,7 @@ BEGIN
         '成品入库',
         p_warehouse_id,
         1,
-        CONCAT('成品 ', (SELECT product_name FROM products WHERE product_id = p_product_id), ' 入库自动扣减配件'),
+        CONCAT('成品 ', v_product_name, ' 入库自动扣减配件'),
         p_created_by
     );
     
@@ -687,8 +692,9 @@ BEGIN
         WHERE warehouse_id = p_warehouse_id AND item_id = v_component_id AND item_type = 2;
         
         IF v_available_qty < v_total_component_qty THEN
-            SIGNAL SQLSTATE '45000' 
-            SET MESSAGE_TEXT = CONCAT('配件 ', (SELECT component_name FROM components WHERE component_id = v_component_id), ' 库存不足，需要 ', v_total_component_qty, '，实际可用 ', COALESCE(v_available_qty, 0));
+            SELECT component_name INTO v_component_name FROM components WHERE component_id = v_component_id;
+            SET v_error_message = CONCAT('配件 ', v_component_name, ' 库存不足，需要 ', v_total_component_qty, '，实际可用 ', COALESCE(v_available_qty, 0));
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = v_error_message;
         END IF;
         
         -- 从库存中扣减配件（先进先出原则）
@@ -704,8 +710,9 @@ BEGIN
             LIMIT 1;
             
             IF v_current_location_id IS NULL THEN
-                SIGNAL SQLSTATE '45000' 
-                SET MESSAGE_TEXT = CONCAT('配件 ', (SELECT component_name FROM components WHERE component_id = v_component_id), ' 库存不足，无法完成扣减');
+                SELECT component_name INTO v_component_name FROM components WHERE component_id = v_component_id;
+                SET v_error_message = CONCAT('配件 ', v_component_name, ' 库存不足，无法完成扣减');
+                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = v_error_message;
             END IF;
             
             -- 确定本次扣减数量
@@ -725,7 +732,7 @@ BEGIN
                 2, -- 配件
                 v_current_location_id,
                 -@deduct_qty,
-                CONCAT('成品 ', (SELECT product_name FROM products WHERE product_id = p_product_id), ' 入库自动扣减')
+                CONCAT('成品 ', v_product_name, ' 入库自动扣减')
             );
             
             -- 更新库存余额

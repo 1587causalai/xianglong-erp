@@ -13,10 +13,10 @@ exports.verifyToken = async (req, res, next) => {
       });
     }
     
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_very_secure_default_secret_key_for_dev');
     
     // 检查用户是否存在
-    const user = await User.findByPk(decoded.id);
+    const user = await User.findByPk(decoded.userId);
     
     if (!user) {
       return res.status(401).json({

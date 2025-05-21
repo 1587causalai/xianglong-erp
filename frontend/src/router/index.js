@@ -6,6 +6,39 @@ import store from '../store'
 
 Vue.use(VueRouter)
 
+// --- 全局捕获 NavigationDuplicated 错误 ---
+const originalPush = VueRouter.prototype.push
+VueRouter.prototype.push = function push(location, onResolve, onReject) {
+  if (onResolve || onReject) return originalPush.call(this, location, onResolve, onReject)
+  return originalPush.call(this, location).catch(err => {
+    if (
+      err.name === 'NavigationDuplicated' ||
+      // Vue Router 3.1+ uses isNavigationFailure and NavigationFailureType
+      (VueRouter.isNavigationFailure && VueRouter.isNavigationFailure(err, VueRouter.NavigationFailureType.duplicated))
+    ) {
+      // 静默处理重复导航错误
+      return err;
+    }
+    // 对于其他错误，仍然抛出
+    return Promise.reject(err);
+  });
+}
+
+const originalReplace = VueRouter.prototype.replace;
+VueRouter.prototype.replace = function replace(location, onResolve, onReject) {
+  if (onResolve || onReject) return originalReplace.call(this, location, onResolve, onReject);
+  return originalReplace.call(this, location).catch(err => {
+    if (
+      err.name === 'NavigationDuplicated' ||
+      (VueRouter.isNavigationFailure && VueRouter.isNavigationFailure(err, VueRouter.NavigationFailureType.duplicated))
+    ) {
+      return err;
+    }
+    return Promise.reject(err);
+  });
+};
+// --- 结束全局捕获 ---
+
 const routes = [
   {
     path: '/login',
