@@ -1,0 +1,9 @@
+.DS_Store
+node_modules
+.env
+
+# 生产环境配置
+.env.production
+
+# 开发环境配置
+.env.development
